@@ -1,0 +1,51 @@
+{
+  "cases": {
+    "empty_gemini_response": {
+      "candidates": []
+    },
+    "empty_openai_response": {
+      "choices": []
+    },
+    "null_content_gemini": {
+      "candidates": [{ "content": null }]
+    },
+    "null_content_openai": {
+      "choices": [{ "message": null }]
+    },
+    "invalid_json_text": {
+      "candidates": [
+        {
+          "content": {
+            "parts": [{ "text": "this is not valid json at all" }]
+          }
+        }
+      ]
+    },
+    "markdown_fence_wrapped": {
+      "candidates": [
+        {
+          "content": {
+            "parts": [
+              {
+                "text": "```json\n[{\"index\":0,\"original\":\"Hello world.\",\"chunked\":\"Hello world.\",\"is_simple\":true,\"new_words\":[]}]\n```"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "wrapped_in_object": {
+      "candidates": [
+        {
+          "content": {
+            "parts": [
+              {
+                "text": "{\"results\":[{\"index\":0,\"original\":\"Hello world.\",\"chunked\":\"Hello world.\",\"is_simple\":true,\"new_words\":[]}]}"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

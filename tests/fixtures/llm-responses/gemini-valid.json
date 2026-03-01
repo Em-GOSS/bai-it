@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "[{\"index\":0,\"original\":\"The researchers who had been studying the effects of climate change on coral reefs published their findings in a prestigious journal.\",\"chunked\":\"The researchers\\n  who had been studying the effects of climate change on coral reefs\\npublished their findings\\n  in a prestigious journal.\",\"is_simple\":false,\"new_words\":[{\"word\":\"prestigious\",\"definition\":\"有声望的，享有盛誉的\"}]},{\"index\":1,\"original\":\"I like cats.\",\"chunked\":\"I like cats.\",\"is_simple\":true,\"new_words\":[]}]"
+          }
+        ]
+      }
+    }
+  ]
+}

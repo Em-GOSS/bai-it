@@ -4,15 +4,58 @@
 
 ## 当前状态
 
-分块功能（P0）的需求讨论和技术方案已完成。准备进入两个并行工作流：
-1. **编码**：按 architecture.md 的开发顺序开始实现
-2. **需求讨论**：管理端（Options 页）的 PRD 需求
+Step 1-7 编码完成（Popup 已在之前 session 完成），109 个单元测试全通过。
+
+最近修复了 Reddit 等信息流站点的分块显示问题：Reddit 使用 `line-clamp` + `overflow-hidden` 截断帖子预览，导致分块元素被裁切不可见。新增 `insertChunkedElement()` 函数，在插入分块元素前向上遍历 DOM 找到截断容器，在容器外层插入。CDP 验证 20/20 帖子全部可见。
+
+同时完善了 5 级显示方式（intensity L1-L5）的渲染逻辑。
 
 ## 已完成
 
 - [x] 初始化 git 仓库和文档骨架
 - [x] 分块功能需求讨论（扫读 + 细读两种模式）
 - [x] 分块功能技术方案（本地优先 + LLM 兜底的两级架构）
+- [x] 测试机制建立：docs/testing.md（验收标准 + 测试方法 + 基础设施）
+- [x] Chrome CDP 调试环境配置（`~/.chrome-debug-profile/`，X 已登录，端口 9222）
+- [x] 管理端（Options 页）需求讨论
+- [x] Popup 需求重新设计（大按钮开关 + 站点级 toggle + 辅助力度滑杆 + 显示方式分段选择器）。原型：`mockup-popup.html`
+- [x] **Step 1：项目骨架** — package.json、build.mjs、manifest.json、tsconfig.json
+- [x] **Step 2：复制可复用代码** — rule-engine、renderer、styles、types、cache、vocab-panel
+- [x] **Step 3：LLM 适配层** — Gemini + OpenAI 兼容格式，26 个单元测试
+- [x] **Step 4：细读模式** — 规则引擎复杂度判断 + LLM 分块 + 手动触发，22 个单元测试
+- [x] **Step 5：扫读模式** — scan-rules.ts 本地拆分（并列/转折/条件/从句），31 个单元测试
+- [x] **Step 6：生词系统** — vocab.ts 词频过滤 + 行业术语 + 离线词典 + 已知词跳过，16 个单元测试
+- [x] **Step 7：Popup** — popup.html + popup.js，LLM 配置、拆分设置（粒度/显示方式/门槛）、模式切换
+- [x] **信息流截断修复** — insertChunkedElement() 跳过 line-clamp/overflow-hidden 容器，在外层插入
+- [x] **5 级显示方式** — L5 全拆、L4 缩进无透明度、L3 仅分行、L2 行内分隔符、L1 从句变淡
+
+## 编码细节
+
+### 构建配置
+- **ESM** 仅用于 background service worker（MV3 要求 `type: module`）
+- **IIFE** 用于 content script、popup、options（Chrome 不支持 content script ESM）
+- content.js 包含词汇数据打包后 102KB（minified），可接受
+
+### 数据文件（data/）
+- `word-frequency.json`：5000 常用词（来源：Google Trillion Word Corpus top 5000）
+- `dict-ecdict.json`：~250 个精选词汇中文释义（MVP 子集，生产可扩展）
+- `industry-ai.json`：~80 个 AI 行业术语及中文释义
+
+### 浏览器测试
+- 已切换到 **Puppeteer** 做浏览器验收测试（替代了之前不稳定的 CDP websocket 方案）
+- 冒烟测试脚本：`tests/acceptance/smoke-test.mjs`
+- 扫读模式测试脚本：`tests/acceptance/scan-mode-basic.mjs`
+
+### 待人工确认项
+1. 配置 API key 后，在 X 首页验证扫读模式拆分效果
+2. 生词虚线标注和 hover 释义弹层
+3. 滚动加载后新推文也被处理
+4. 释义准确性抽查
+5. Reddit 信息流页面分块是否正常分行显示（L3-L5）
+6. Popup 各控件功能（LLM 配置保存、显示方式滑块、粒度切换）
+
+### Chrome 调试 profile 问题
+旧的 `~/.chrome-debug-profile/` 无法通过 `--load-extension` 加载扩展（原因不明，可能是 profile 状态损坏）。新 profile `~/.chrome-debug-profile-2/` 可以正常加载但缺少 Reddit 登录状态。建议：在用户主力 Chrome 中手动加载 dist/ 目录测试。
 
 ## 关键决策记录
 
@@ -23,36 +66,31 @@
 ### 生词标注方案
 - **不直接显示中文释义**，用 hover 虚线（用户确认，避免视觉干扰和不准确标注的打扰）
 - **三层词汇源**：行业术语包（V1 必须有 AI 包）> 通用离线词典 > LLM 语境化释义
-- AI 行业术语包用 LLM + 搜索生成，人工审核后内置
+- AI 行业术语包手动审核后内置
 
-### 模式切换
-- 按页面类型（URL + DOM）自动判断，信息流 → 扫读，内容页 → 细读
-- 信息流中特别长的内容自动提升辅助力度
-- Popup 手动切换兜底
+### 学习系统（管理端 Options 页）
+- **页面结构**：四个 Tab——Dashboard、每日学习、难句集、设置
+- **核心单位是句子不是单词**：不做"生词本"，做"难句集"
+- **难句卡片 6 层**：原句 → 句式标签 → 分块 → 句式讲解 → 学会表达 → 生词
+- **视觉风格**：借鉴 frontend-slides 项目
 
 ### 技术栈
 - 构建工具：ESBuild（沿用旧项目，加 React JSX 支持）
 - 单包结构，不做 monorepo
-- 旧项目约 1,400 行代码可直接复用（rule-engine、renderer、styles、types、vocab-panel、cache）
+- 浏览器测试：Puppeteer
 
-## 编码工作流的开发顺序
+## 开发顺序
 
 详见 docs/architecture.md "开发顺序" 章节，共 9 步：
-1. 项目骨架（package.json、build.mjs、manifest.json、tsconfig.json）
-2. 复制可复用代码
-3. LLM 适配层（最小验证）
-4. 细读模式
-5. 扫读模式
-6. 生词系统（离线词典 + 词频表 + AI 行业术语包）
-7. Popup
+1. ~~项目骨架~~ ✅
+2. ~~复制可复用代码~~ ✅
+3. ~~LLM 适配层~~ ✅
+4. ~~细读模式~~ ✅
+5. ~~扫读模式~~ ✅
+6. ~~生词系统~~ ✅
+7. **Popup** ← 下一步
 8. IndexedDB 数据层
 9. Options 页面（React）
-
-## 需求讨论工作流的下一步
-
-- [ ] 管理端（Options 页）PRD 需求讨论
-  - Dashboard、阅读记录、生词本、每日学习、本周回顾
-  - 具体 UI 设计和交互
 
 ## 参考文件
 
