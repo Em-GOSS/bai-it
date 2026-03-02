@@ -4,21 +4,27 @@
 
 ## 当前状态
 
-**Step 1-9 编码完成 + P0 修复 + Popup UI 改造 + 全局改名**。189 个单元测试全通过，构建正常。
+**Step 1-9 编码完成 + 品牌升级 + 图标系统 + 状态指示**。189 个单元测试全通过，构建正常。
 
 ### 本次完成
 
-1. **P0 修复：扫读模式生词释义** — `src/content/index.ts` 扫读路径增加 vocab-only 分支。之前只在 `hasAnyChunks` 时标注生词，现在即使句子没被拆分（太短/无拆分点），只要有可标注的生词也会显示虚线 + hover 释义
-2. **Popup UI 改造** — `popup.html` 从白色/蓝色主题完全重写为「锐 Sharp」暗色主题（#09090b + #ef4444），匹配 `playground-pages.html` 设计原型。包括：Google Fonts 加载、Logo 字体、暗色分段选择器、红色滑杆、红色 toggle、红色 glow 按钮
-3. **Popup 品牌文案** — `src/popup/index.ts` 所有 UI 文案从「拆分」改为「掰」（掰it / 少掰 / 多掰 / 掰多少 / 掰句设置）
-4. **全局改名 OpenEn → 掰it** — manifest.json、package.json、CLAUDE.md、README.md、architecture.md、testing.md、PRIVACY.md、popup-test.mjs 中的 OpenEn 引用全部更新。TypeScript 类型 `OpenEnConfig` → `BaitConfig`（types.ts + 所有 import 处）
-5. **Badge 颜色** — background/index.ts badge 颜色从蓝色 #2563eb 改为红色 #ef4444
+1. **图标重做** — 所有尺寸只放"掰"字（ZCOOL KuaiLe），字号放大确保 16px 也清晰可读。生成脚本 `scripts/generate-icons.mjs`
+2. **状态指示** — 去掉 badge 文字（之前是 "ON"），改为启用时右下角显示小绿点（#22c55e）。主图标永远保持红色品牌色
+3. **修复图标状态不同步 bug** — Popup 大按钮暂停/恢复、站点 toggle 关闭现在都正确切换图标。切换 tab 时也考虑暂停状态
+4. **设计文档更新** — `docs/design.md` 图标系统和状态指示规范同步更新
+
+### 上次 session 完成（已提交）
+
+1. 品牌升级：全局改名 OpenEn → 掰it + Popup UI 暗色主题改造
+2. Step 9 Options 页面（React 18, 4 Tab, 多 Provider 配置）
+3. P0 修复：扫读模式未拆分句子也标注生词
+4. Logo 定稿 + 六页面设计原型 + playground 文件归档
 
 ### 注意事项
 
 - **IndexedDB 数据库名保持 `openen-data` / `openen-cache`**，改名会丢失已有用户数据
-- **Playground/Mockup 文件中的 OpenEn 注释未改**，这些是历史设计文件
-- **package-lock.json 中的 openen 未手动改**，下次 `npm install` 会自动同步
+- **词汇扩展正在另一个窗口开发**（dict-ecdict.json、industry-ai.json、vocab.ts），未提交
+- **图标两套 PNG**：`icons/icon*.png`（默认无绿点）+ `icons/icon*-on.png`（启用态有绿点），background 通过 `chrome.action.setIcon()` 动态切换
 
 ---
 
