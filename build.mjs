@@ -22,6 +22,9 @@ function copyStaticFiles() {
   cpSync("popup.html", "dist/popup.html");
   cpSync("options.html", "dist/options.html");
 
+  // CSS 文件
+  cpSync("options.css", "dist/options.css");
+
   // 图标
   mkdirSync("dist/icons", { recursive: true });
   cpSync("icons", "dist/icons", { recursive: true });

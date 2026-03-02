@@ -3,37 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OpenEn</title>
+  <title>掰it</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Syne:wght@400;500;700;800&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap&text=掰" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       width: 360px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 13px;
-      color: #1a1a1a;
-      background: #fff;
+      color: rgba(255,255,255,0.7);
+      background: #09090b;
     }
 
     /* ===== Header ===== */
     .header {
-      padding: 14px 20px;
+      padding: 16px 20px;
       display: flex;
       align-items: center;
-      gap: 10px;
-      border-bottom: 1px solid #f0f0f0;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
     }
 
     .logo {
-      font-size: 18px;
-      font-weight: 700;
-      color: #2563eb;
-      letter-spacing: -0.5px;
+      display: flex;
+      align-items: baseline;
+    }
+
+    .logo .zh {
+      font-family: 'ZCOOL KuaiLe', sans-serif;
+      font-weight: 400;
+      font-size: 20px;
+      color: #fafafa;
+      line-height: 1;
+    }
+
+    .logo .en {
+      font-family: 'Nunito', sans-serif;
+      font-weight: 600;
+      font-size: 16px;
+      color: #fafafa;
+      line-height: 1;
+      margin-left: 1px;
     }
 
     .site-name {
-      font-size: 13px;
-      color: #94a3b8;
+      font-size: 12px;
+      color: rgba(255,255,255,0.25);
+      font-weight: 500;
     }
 
     /* ===== Big Action Button ===== */
@@ -44,38 +64,40 @@
     .action-btn {
       width: 100%;
       height: 48px;
-      border-radius: 10px;
+      border-radius: 6px;
       border: none;
-      font-size: 15px;
-      font-weight: 600;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
       cursor: pointer;
-      transition: all 0.25s ease;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
+      transition: all 0.3s;
+      letter-spacing: 0.3px;
     }
 
     .action-btn.is-on {
-      background: #2563eb;
+      background: #ef4444;
       color: #fff;
+      box-shadow: 0 0 20px rgba(239,68,68,0.25), 0 0 40px rgba(239,68,68,0.08);
     }
 
     .action-btn.is-on:hover {
-      background: #1d4ed8;
+      background: #f87171;
+      box-shadow: 0 0 28px rgba(239,68,68,0.35), 0 0 56px rgba(239,68,68,0.12);
     }
 
     .action-btn.is-off {
-      background: #f1f5f9;
-      color: #475569;
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.5);
+      border: 1px solid rgba(255,255,255,0.08);
     }
 
     .action-btn.is-off:hover {
-      background: #e2e8f0;
-    }
-
-    .action-btn .icon {
-      font-size: 18px;
+      background: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.7);
     }
 
     /* ===== Site toggle row ===== */
@@ -83,25 +105,25 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 20px 14px;
-      border-bottom: 1px solid #f0f0f0;
+      padding: 12px 20px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
     }
 
     .site-row-label {
       font-size: 13px;
-      color: #64748b;
+      color: rgba(255,255,255,0.35);
     }
 
     .site-row-label .domain {
+      color: rgba(255,255,255,0.6);
       font-weight: 500;
-      color: #334155;
     }
 
-    /* Small toggle */
+    /* Toggle switch */
     .toggle-sm {
       position: relative;
       width: 40px;
-      height: 24px;
+      height: 22px;
       cursor: pointer;
       flex-shrink: 0;
     }
@@ -111,30 +133,30 @@
     .toggle-sm .t-track {
       position: absolute;
       inset: 0;
-      background: #e2e8f0;
-      border-radius: 12px;
-      transition: background 0.25s ease;
+      background: rgba(255,255,255,0.08);
+      border-radius: 11px;
+      transition: background 0.3s;
     }
 
     .toggle-sm input:checked + .t-track {
-      background: #2563eb;
+      background: #ef4444;
     }
 
     .toggle-sm .t-thumb {
       position: absolute;
-      top: 2.5px;
-      left: 2.5px;
-      width: 19px;
-      height: 19px;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
       background: #fff;
       border-radius: 50%;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-      transition: transform 0.25s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       pointer-events: none;
     }
 
     .toggle-sm input:checked ~ .t-thumb {
-      transform: translateX(16px);
+      transform: translateX(18px);
     }
 
     /* ===== Content ===== */
@@ -153,12 +175,13 @@
     }
 
     .section-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: #64748b;
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: #ef4444;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
     }
 
     /* ===== Slider ===== */
@@ -171,8 +194,13 @@
     }
 
     .slider-label {
-      font-size: 13px;
-      color: #94a3b8;
+      font-size: 12px;
+      color: rgba(255,255,255,0.25);
+    }
+
+    .slider-label.center {
+      color: rgba(255,255,255,0.5);
+      font-weight: 500;
     }
 
     .slider-track-container {
@@ -186,133 +214,139 @@
       width: 100%;
       height: 6px;
       border-radius: 3px;
-      background: linear-gradient(to right, #e2e8f0, #2563eb);
+      background: rgba(255,255,255,0.06);
       outline: none;
     }
 
     input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 22px;
-      height: 22px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       background: #fff;
-      border: 2px solid #2563eb;
-      box-shadow: 0 1px 4px rgba(37,99,235,0.3);
+      border: 2px solid #ef4444;
+      box-shadow: 0 0 8px rgba(239,68,68,0.3);
       cursor: pointer;
     }
 
     .slider-hint {
-      font-size: 12px;
-      color: #94a3b8;
-      margin-top: 6px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.25);
+      margin-top: 4px;
       text-align: center;
     }
 
     /* ===== Segmented Control ===== */
     .seg-control {
       display: flex;
-      background: #f1f5f9;
-      border-radius: 8px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
       padding: 3px;
       margin-bottom: 10px;
     }
 
     .seg-btn {
       flex: 1;
-      padding: 7px 0;
+      padding: 8px 0;
       border: none;
       background: transparent;
-      font-size: 13px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12px;
       font-weight: 500;
-      color: #64748b;
+      color: rgba(255,255,255,0.3);
       cursor: pointer;
-      border-radius: 6px;
-      transition: all 0.2s ease;
+      border-radius: 8px;
+      transition: all 0.3s;
     }
 
     .seg-btn.active {
-      background: #fff;
-      color: #1e293b;
+      background: rgba(239,68,68,0.12);
+      color: #fca5a5;
       font-weight: 600;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
 
     .seg-btn:hover:not(.active) {
-      color: #334155;
+      color: rgba(255,255,255,0.5);
     }
 
     /* ===== Mode description ===== */
     .mode-desc {
-      font-size: 12px;
-      color: #94a3b8;
-      margin-bottom: 8px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.2);
+      margin-bottom: 10px;
       transition: all 0.2s ease;
     }
 
     /* ===== Display Preview ===== */
     .display-preview {
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
       padding: 14px 16px;
       min-height: 64px;
-      font-size: 14px;
-      line-height: 1.7;
-      color: #475569;
-      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 13px;
+      line-height: 1.9;
+      color: rgba(255,255,255,0.5);
       transition: all 0.2s ease;
     }
 
     .display-preview .line { display: block; }
 
     /* Structure (详细) */
-    .display-preview.mode-structure .line-main { color: #1e293b; }
-    .display-preview.mode-structure .line-sub1 { padding-left: 1em; opacity: 0.65; }
-    .display-preview.mode-structure .line-sub2 { padding-left: 2em; opacity: 0.45; }
+    .display-preview.mode-structure .line-main { color: rgba(255,255,255,0.75); }
+    .display-preview.mode-structure .line-sub1 { padding-left: 1.2em; color: rgba(255,255,255,0.28); }
+    .display-preview.mode-structure .line-sub2 { padding-left: 2.4em; color: rgba(255,255,255,0.18); }
 
     /* Lines (简洁) */
-    .display-preview.mode-lines .line { color: #475569; }
+    .display-preview.mode-lines .line { color: rgba(255,255,255,0.5); }
 
     /* Light (轻微) */
     .display-preview.mode-light .line { display: inline; }
-    .display-preview.mode-light .line-main { color: #1e293b; font-weight: 500; }
-    .display-preview.mode-light .line-sub { opacity: 0.35; }
-    .display-preview.mode-light .dot { color: #cbd5e1; margin: 0 3px; }
+    .display-preview.mode-light .line-main { color: rgba(255,255,255,0.75); font-weight: 500; }
+    .display-preview.mode-light .line-sub { color: rgba(255,255,255,0.2); }
+    .display-preview.mode-light .dot { color: rgba(255,255,255,0.15); margin: 0 3px; }
+
+    /* ===== Display label ===== */
+    .display-label {
+      margin-bottom: 8px;
+    }
 
     /* ===== Footer ===== */
     .footer {
       padding: 12px 20px;
-      background: #f8fafc;
-      border-top: 1px solid #f0f0f0;
+      border-top: 1px solid rgba(255,255,255,0.06);
       text-align: center;
     }
 
     .footer a {
       font-size: 12px;
-      color: #94a3b8;
+      color: rgba(255,255,255,0.2);
       text-decoration: none;
+      transition: color 0.2s;
     }
 
-    .footer a:hover { color: #2563eb; }
+    .footer a:hover { color: #fca5a5; }
   </style>
 </head>
 <body>
   <!-- Header -->
   <div class="header">
-    <span class="logo">OpenEn</span>
+    <div class="logo">
+      <span class="zh">掰</span><span class="en">it</span>
+    </div>
     <span class="site-name" id="site-name">—</span>
   </div>
 
   <!-- Big action button -->
   <div class="action-area">
     <button class="action-btn is-on" id="action-btn">
-      <span class="icon">◩</span>
       <span id="action-text">显示原文</span>
     </button>
   </div>
 
   <!-- Site-level toggle -->
   <div class="site-row">
-    <span class="site-row-label">总是拆分 <span class="domain" id="site-domain">—</span></span>
+    <span class="site-row-label">总是掰 <span class="domain" id="site-domain">—</span></span>
     <label class="toggle-sm">
       <input type="checkbox" id="site-toggle" checked>
       <div class="t-track"></div>
@@ -323,24 +357,24 @@
   <!-- Settings content -->
   <div class="content" id="content">
     <div class="section">
-      <div class="section-title">拆分设置</div>
+      <div class="section-title">掰句设置</div>
 
       <!-- Intensity slider -->
       <div class="slider-row">
         <div class="slider-labels">
-          <span class="slider-label">少拆</span>
-          <span class="slider-label" style="font-weight:600;color:#334155;">辅助力度</span>
-          <span class="slider-label">多拆</span>
+          <span class="slider-label">少掰</span>
+          <span class="slider-label center">掰多少</span>
+          <span class="slider-label">多掰</span>
         </div>
         <div class="slider-track-container">
           <input type="range" id="assist-slider" min="1" max="5" value="3" step="1">
         </div>
-        <div class="slider-hint" id="assist-hint">适中 — 复杂句自动拆，简单句不打扰</div>
+        <div class="slider-hint" id="assist-hint">复杂句自动掰，简单句不打扰</div>
       </div>
 
       <!-- Display mode: segmented control + preview -->
-      <div style="margin-bottom:8px;">
-        <span class="slider-label" style="font-weight:600;color:#334155;">显示方式</span>
+      <div class="display-label">
+        <span class="slider-label center">掰完怎么显示</span>
       </div>
 
       <div class="seg-control" id="seg-control">
@@ -349,7 +383,7 @@
         <button class="seg-btn" data-mode="light">轻微</button>
       </div>
 
-      <div class="mode-desc" id="mode-desc">分行 + 缩进，一眼看清主从关系</div>
+      <div class="mode-desc" id="mode-desc">掰成段，缩进显示主从关系</div>
 
       <!-- Shared preview area -->
       <div class="display-preview mode-structure" id="preview"></div>

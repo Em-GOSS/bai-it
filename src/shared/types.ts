@@ -4,17 +4,33 @@ export type ReadingMode = "scan" | "deep";
 
 // ========== LLM 配置 ==========
 
+/** llm-adapter 内部使用的扁平格式（从 provider 推导） */
 export interface LLMConfig {
   format: "gemini" | "openai-compatible";
-  apiKey: string; // AES 加密存储
-  baseUrl: string; // OpenAI 兼容格式需要，Gemini 用默认值
+  apiKey: string;
+  baseUrl: string;
   model: string;
+}
+
+/** 5 种 Provider */
+export type ProviderKey = "gemini" | "chatgpt" | "deepseek" | "qwen" | "kimi";
+
+/** 单个 Provider 的存储数据 */
+export interface ProviderConfig {
+  apiKey: string;
+  model: string;
+}
+
+/** 多 Provider 存储结构 */
+export interface LLMMultiConfig {
+  activeProvider: ProviderKey;
+  providers: Record<ProviderKey, ProviderConfig>;
 }
 
 // ========== 插件配置 ==========
 
-export interface OpenEnConfig {
-  llm: LLMConfig;
+export interface BaitConfig {
+  llm: LLMMultiConfig;
   sensitivity: number; // 2-5，细读模式复杂度阈值
   scanThreshold: "short" | "medium" | "long"; // 扫读模式最小词数阈值
   chunkGranularity: "coarse" | "medium" | "fine"; // 拆分颗粒度
@@ -23,12 +39,18 @@ export interface OpenEnConfig {
   industryPacks: string[]; // 勾选的行业术语包，如 ["ai"]
 }
 
-export const DEFAULT_CONFIG: OpenEnConfig = {
+export const DEFAULT_PROVIDERS: Record<ProviderKey, ProviderConfig> = {
+  gemini: { apiKey: "", model: "gemini-2.0-flash" },
+  chatgpt: { apiKey: "", model: "gpt-4o-mini" },
+  deepseek: { apiKey: "", model: "deepseek-chat" },
+  qwen: { apiKey: "", model: "qwen-turbo" },
+  kimi: { apiKey: "", model: "moonshot-v1-8k" },
+};
+
+export const DEFAULT_CONFIG: BaitConfig = {
   llm: {
-    format: "gemini",
-    apiKey: "",
-    baseUrl: "",
-    model: "gemini-2.0-flash",
+    activeProvider: "gemini",
+    providers: { ...DEFAULT_PROVIDERS },
   },
   sensitivity: 3,
   scanThreshold: "medium",
@@ -38,12 +60,51 @@ export const DEFAULT_CONFIG: OpenEnConfig = {
   industryPacks: ["ai"],
 };
 
+/** Provider 元数据（format / baseUrl 是常量，从 provider 名推导） */
+export const PROVIDER_META: Record<ProviderKey, { format: LLMConfig["format"]; baseUrl: string; label: string }> = {
+  gemini: { format: "gemini", baseUrl: "", label: "Gemini" },
+  chatgpt: { format: "openai-compatible", baseUrl: "https://api.openai.com", label: "ChatGPT" },
+  deepseek: { format: "openai-compatible", baseUrl: "https://api.deepseek.com", label: "DeepSeek" },
+  qwen: { format: "openai-compatible", baseUrl: "https://dashscope.aliyuncs.com/compatible-mode", label: "Qwen" },
+  kimi: { format: "openai-compatible", baseUrl: "https://api.moonshot.cn", label: "Kimi" },
+};
+
+/** 从多 Provider 配置中解析出 LLMConfig（给 llm-adapter 用） */
+export function resolveLLMConfig(multi: LLMMultiConfig): LLMConfig {
+  const provider = multi.activeProvider;
+  const pc = multi.providers[provider];
+  const meta = PROVIDER_META[provider];
+  return {
+    format: meta.format,
+    apiKey: pc.apiKey,
+    baseUrl: meta.baseUrl,
+    model: pc.model,
+  };
+}
+
+/** 旧格式升级到新格式（向后兼容） */
+export function migrateLLMConfig(raw: unknown): LLMMultiConfig {
+  if (raw && typeof raw === "object" && "activeProvider" in (raw as Record<string, unknown>)) {
+    return raw as LLMMultiConfig;
+  }
+  // 旧格式: { format, apiKey, baseUrl, model }
+  const old = raw as { format?: string; apiKey?: string; model?: string } | undefined;
+  const providers = { ...DEFAULT_PROVIDERS };
+  if (old?.apiKey) {
+    // 猜测旧 provider
+    const guessProvider: ProviderKey = old.format === "gemini" ? "gemini" : "chatgpt";
+    providers[guessProvider] = { apiKey: old.apiKey, model: old.model || DEFAULT_PROVIDERS[guessProvider].model };
+    return { activeProvider: guessProvider, providers };
+  }
+  return { activeProvider: "gemini", providers };
+}
+
 // ========== Content Script ↔ Service Worker 消息 ==========
 
 export type Message =
   | { type: "chunk"; sentences: string[]; mode: ReadingMode; source_url?: string }
   | { type: "getConfig" }
-  | { type: "updateConfig"; config: Partial<OpenEnConfig> }
+  | { type: "updateConfig"; config: Partial<BaitConfig> }
   | { type: "checkActive" }
   | { type: "toggleSite"; hostname: string }
   | { type: "pauseTab"; tabId: number }

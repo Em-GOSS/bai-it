@@ -8,7 +8,7 @@
  * 4. 显示方式分段选择器（详细/简洁/轻微）+ 实时预览
  */
 
-import type { Message, OpenEnConfig } from "../shared/types.ts";
+import type { Message, BaitConfig } from "../shared/types.ts";
 
 // ========== DOM 元素 ==========
 
@@ -30,11 +30,11 @@ const linkOptions = $<HTMLAnchorElement>("link-options");
 // ========== 常量 ==========
 
 const ASSIST_HINTS: Record<number, string> = {
-  1: "最少 — 只拆最难的句子",
-  2: "较少 — 复杂句才拆",
-  3: "适中 — 复杂句自动拆，简单句不打扰",
-  4: "较多 — 大部分长句都会拆",
-  5: "最多 — 积极拆分，一目了然",
+  1: "只掰最难的句子",
+  2: "复杂句才掰",
+  3: "复杂句自动掰，简单句不打扰",
+  4: "大部分长句都会掰",
+  5: "尽量都掰开",
 };
 
 /** 辅助力度 → 底层配置映射 */
@@ -49,7 +49,7 @@ const ASSIST_TO_CONFIG: Record<number, { chunkGranularity: "coarse" | "medium" |
 /** 显示方式配置 */
 const DISPLAY_MODES: Record<string, { desc: string; intensity: number; html: string }> = {
   structure: {
-    desc: "分行 + 缩进，一眼看清主从关系",
+    desc: "掰成段，缩进显示主从关系",
     intensity: 5,
     html: `
       <span class="line line-main">She finished the project</span>
@@ -88,7 +88,7 @@ function sendMessage(message: Message): Promise<unknown> {
 
 // ========== 辅助力度：config → slider 值 ==========
 
-function configToAssistLevel(config: OpenEnConfig): number {
+function configToAssistLevel(config: BaitConfig): number {
   const s = config.sensitivity;
   if (s >= 5) return 1;
   if (s >= 4) return 2;
@@ -113,7 +113,7 @@ function updateActionButton(): void {
     actionText.textContent = "显示原文";
   } else {
     actionBtn.className = "action-btn is-off";
-    actionText.textContent = "拆分显示";
+    actionText.textContent = "掰it";
   }
 
   // 站点禁用时，大按钮灰掉不可点
@@ -178,7 +178,7 @@ async function init(): Promise<void> {
   }
 
   // 获取配置
-  const config = (await sendMessage({ type: "getConfig" })) as OpenEnConfig;
+  const config = (await sendMessage({ type: "getConfig" })) as BaitConfig;
 
   // 设置站点 toggle
   siteToggle.checked = siteEnabled;

@@ -17,7 +17,7 @@ import {
   loadFrequencyList, loadDictionary, loadIndustryPack,
   annotateWords, toNewWordsFormat, isLoaded,
 } from "../shared/vocab.ts";
-import type { OpenEnConfig, ChunkResult, BackgroundMessage, ReadingMode } from "../shared/types.ts";
+import type { BaitConfig, ChunkResult, BackgroundMessage, ReadingMode } from "../shared/types.ts";
 import { DEFAULT_CONFIG } from "../shared/types.ts";
 import { createChunkedElement } from "./renderer.ts";
 import { ENLEARN_STYLES } from "./styles.ts";
@@ -55,7 +55,7 @@ function detectReadingMode(url: string): ReadingMode {
 
 // ========== 状态 ==========
 
-let config: OpenEnConfig = { ...DEFAULT_CONFIG };
+let config: BaitConfig = { ...DEFAULT_CONFIG };
 let currentMode: ReadingMode = "deep";
 let isActive = false;
 let isPaused = false;
@@ -160,7 +160,7 @@ async function init(): Promise<void> {
     // 静默失败
   }
 
-  config = await sendMessage({ type: "getConfig" }) as OpenEnConfig;
+  config = await sendMessage({ type: "getConfig" }) as BaitConfig;
   currentMode = detectReadingMode(window.location.href);
 
   const response = await sendMessage({ type: "checkActive" }) as { active: boolean };
@@ -470,15 +470,17 @@ function scanPage(): void {
         }
       }
 
+      // 不管是否拆分，都先做生词标注
+      const vocabAnnotations = isLoaded()
+        ? annotateWords(text, knownWords, config.industryPacks)
+        : [];
+
       if (hasNeedsLLM && !hasAnyChunks) {
         // 全部需要 LLM → 走 LLM 路径
         pendingElements.set(el, text);
         intersectionObserver?.observe(el);
       } else if (hasAnyChunks) {
-        // 有本地拆分结果 → 渲染
-        const vocabAnnotations = isLoaded()
-          ? annotateWords(text, knownWords, config.industryPacks)
-          : [];
+        // 有本地拆分结果 → 渲染（带生词标注）
         const chunkedString = allChunkedLines.join("\n");
         const chunkResult: ChunkResult = {
           original: text,
@@ -495,8 +497,22 @@ function scanPage(): void {
             addWords(chunkResult.newWords, text);
           }
         }
+      } else if (vocabAnnotations.length > 0) {
+        // 句子没拆开但有生词 → 只标注生词（不改变显示结构）
+        const chunkResult: ChunkResult = {
+          original: text,
+          chunked: text,
+          isSimple: false,
+          newWords: toNewWordsFormat(vocabAnnotations),
+        };
+        const chunkedEl = createChunkedElement(chunkResult, config.chunkIntensity);
+        if (chunkedEl) {
+          copyFontStyles(el, chunkedEl);
+          insertChunkedElement(el, chunkedEl);
+          addWords(chunkResult.newWords, text);
+        }
       }
-      // 完全不可拆 → 保持原样
+      // 完全不可拆且无生词 → 保持原样
     }
   }
 }

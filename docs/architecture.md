@@ -1,4 +1,4 @@
-# OpenEn — 技术架构文档
+# 掰it — 技术架构文档
 
 ## 整体架构
 
@@ -25,7 +25,7 @@ Chrome 扩展（单包，零后端）
 ## 项目目录结构
 
 ```
-OpenEn/
+掰it/
 ├── src/
 │   ├── content/              # Content Script
 │   │   ├── index.ts          # DOM 扫描、模式判断、注入

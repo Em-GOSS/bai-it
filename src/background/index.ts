@@ -9,17 +9,17 @@
  * 5. 管理配置和站点开关
  */
 
-import type { Message, OpenEnConfig, ChunkResult } from "../shared/types.ts";
-import { DEFAULT_CONFIG } from "../shared/types.ts";
+import type { Message, BaitConfig, ChunkResult } from "../shared/types.ts";
+import { DEFAULT_CONFIG, resolveLLMConfig, migrateLLMConfig } from "../shared/types.ts";
 import { getCachedBatch, setCacheBatch } from "../shared/cache.ts";
 import { chunkSentences } from "../shared/llm-adapter.ts";
 
 // ========== 配置管理 ==========
 
-async function getConfig(): Promise<OpenEnConfig> {
+async function getConfig(): Promise<BaitConfig> {
   const keys = Object.keys(DEFAULT_CONFIG);
   const items = await chrome.storage.sync.get(keys);
-  const config = items as unknown as OpenEnConfig;
+  const config = items as unknown as BaitConfig;
 
   if (!Array.isArray(config.disabledSites)) {
     config.disabledSites = [];
@@ -30,14 +30,13 @@ async function getConfig(): Promise<OpenEnConfig> {
   if (!config.chunkGranularity) {
     config.chunkGranularity = "fine";
   }
-  if (!config.llm || typeof config.llm !== "object") {
-    config.llm = { ...DEFAULT_CONFIG.llm };
-  }
+  // 兼容旧格式 + 新格式
+  config.llm = migrateLLMConfig(config.llm);
 
   return config;
 }
 
-async function updateConfig(partial: Partial<OpenEnConfig>): Promise<OpenEnConfig> {
+async function updateConfig(partial: Partial<BaitConfig>): Promise<BaitConfig> {
   const current = await getConfig();
   const updated = { ...current, ...partial };
   if (partial.llm) {
@@ -82,7 +81,7 @@ async function toggleSite(hostname: string): Promise<{ enabled: boolean; disable
 async function updateBadge(tabId: number, enabled: boolean): Promise<void> {
   await chrome.action.setBadgeText({ text: enabled ? "ON" : "", tabId });
   await chrome.action.setBadgeBackgroundColor({
-    color: enabled ? "#2563eb" : "#888888",
+    color: enabled ? "#ef4444" : "#888888",
     tabId,
   });
 }
@@ -138,12 +137,13 @@ async function flushBatch(): Promise<void> {
 
   try {
     const config = await getConfig();
+    const llmConfig = resolveLLMConfig(config.llm);
 
-    if (!config.llm.apiKey) {
+    if (!llmConfig.apiKey) {
       throw new Error("API key 未配置");
     }
 
-    const results = await chunkSentences(batch.sentences, config.llm);
+    const results = await chunkSentences(batch.sentences, llmConfig);
 
     // 写缓存
     const cachePairs = results.map((r, i) => ({

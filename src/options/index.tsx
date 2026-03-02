@@ -1,7 +1,7 @@
-/**
- * Options 页面 — React 管理界面入口
- *
- * 职责：生词本、学习记录、周报、壁纸等
- */
+import { createRoot } from "react-dom/client";
+import { App } from "./App.tsx";
 
-console.log("[OpenEn] Options page loaded");
+const root = document.getElementById("app");
+if (root) {
+  createRoot(root).render(<App />);
+}

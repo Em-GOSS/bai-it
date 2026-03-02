@@ -59,7 +59,7 @@ try {
     btnSave: document.getElementById("btn-save") !== null,
   }));
 
-  elements.logo === "OpenEn" ? ok("Logo 显示") : fail(`Logo 异常: ${elements.logo}`);
+  elements.logo === "掰it" ? ok("Logo 显示") : fail(`Logo 异常: ${elements.logo}`);
   elements.btnToggle ? ok("站点开关按钮存在") : fail("站点开关按钮缺失");
   elements.btnPause ? ok("暂停按钮存在") : fail("暂停按钮缺失");
   elements.configToggle ? ok("配置面板入口存在") : fail("配置面板入口缺失");
