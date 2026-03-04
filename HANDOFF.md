@@ -4,9 +4,20 @@
 
 ## 当前状态
 
-**Phase 2 编码 + 生词 Tooltip + 掌握标记 — 全部完成并提交。** 199 个单元测试全通过，构建正常。已完成浏览器基本验收。
+**管理端引导系统 v2 完成。** 199 个单元测试全通过，构建正常。Phase 2 待浏览器验收。
 
-### 本次完成（0304 Options 生词 Tooltip + 掌握标记）
+### 本次完成（0304 引导系统 v2）
+
+**管理端引导逻辑从全局三态枚举重构为 per-tab 三维状态：**
+
+1. **useOnboardingState** — 返回 `{ hasApi, hasData, hasAnalyzedData, pendingCount, loading }`，同时查 `pending_sentences` 和 `learning_records`
+2. **OnboardingBanner** — 改为 variant 模式（browse / api / browse-with-api / null），按 tab 选择变体
+3. **useDashboardData** — 真实模式下合并 pending 计数到 totalSentences，新增 recentPending fallback
+4. **App.tsx** — `dashboardIsExample = !hasData`，`reviewSentencesIsExample = !hasAnalyzedData`，banner variant 按 activeTab 分别计算
+5. **Dashboard** — 无 analyzed 但有 pending 时展示「最近遇到的句子」卡片；有 pending + 无 API 时底部温和引导条
+6. **CSS** — `.nudge-banner` 温和引导条样式
+
+### 上次完成（0304 Options 生词 Tooltip + 掌握标记）
 
 **生词 Tooltip + 掌握标记 — 全部 7 步完成：**
 

@@ -222,7 +222,8 @@ python3 tests/acceptance/deep-read.py   # 细读模式验收
 |--------|------|----------|
 | 无数据 → 示例 + 浏览引导 | 浏览器验收 | 无 pending + 无 learning_records → 展示示例数据（23/47/12）+ banner「以下是示例数据。去浏览几篇英文网页，你的学习数据就会出现在这里。」 |
 | 有 pending → 切换真实数据 | 浏览器验收 | 有 pending_sentences → 统计卡片显示真实数字（难句数含 pending），示例消失 |
-| 有 pending + 无 API 温和引导 | 浏览器验收 | pending_count > 0 且无 API key → 底部出现引导条「你有 X 个句子等待深度分析，配置 API 后自动解锁句型分析和结构化复习」+ 可点击链接跳转设置 |
+| 有 pending → 展示最近句子 | 浏览器验收 | 有 pending 但无 analyzed → 「最近遇到的句子」展示最近 3 条 pending 卡片（原句 + 来源 + 待分析 badge），不显示空状态 |
+| 有 pending + 无 API 温和引导 | 浏览器验收 | pending_count > 0 且无 API key → 底部出现引导条「你已积累 X 条待分析难句。配置 API 后即可解锁句型分析和结构化复习。」+ 可点击链接跳转设置 |
 | 有 pending + 有 API 无引导 | 浏览器验收 | pending_count > 0 且已配置 API → 不显示引导条 |
 | 有已分析数据正常展示 | 浏览器验收 | learning_records > 0 → 统计卡片 + 最近难句列表正常展示 |
 | 总览 isExample 逻辑 | 单元测试 | isExample = (pending_count === 0 && analyzed_count === 0)，即有任何数据就切换到真实 |
