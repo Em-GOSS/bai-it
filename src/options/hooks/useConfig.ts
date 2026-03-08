@@ -7,17 +7,31 @@ export function useConfig() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    chrome.storage.sync.get(Object.keys(DEFAULT_CONFIG), (items) => {
-      const raw = items as unknown as BaitConfig;
-      // 补全缺失字段
-      const merged: BaitConfig = {
-        ...DEFAULT_CONFIG,
-        ...raw,
-        llm: migrateLLMConfig(raw.llm),
+    chrome.storage.local.get(Object.keys(DEFAULT_CONFIG), (items) => {
+      const hasLocalConfig = Object.values(items).some((v) => v !== undefined);
+
+      const finalize = (rawPartial: Partial<BaitConfig>) => {
+        const merged: BaitConfig = {
+          ...DEFAULT_CONFIG,
+          ...rawPartial,
+          llm: migrateLLMConfig(rawPartial.llm),
+        };
+        if (!Array.isArray(merged.disabledSites)) merged.disabledSites = [];
+        setConfig(merged);
+        setLoading(false);
+        if (!hasLocalConfig) {
+          chrome.storage.local.set(merged as Record<string, unknown>);
+        }
       };
-      if (!Array.isArray(merged.disabledSites)) merged.disabledSites = [];
-      setConfig(merged);
-      setLoading(false);
+
+      if (hasLocalConfig) {
+        finalize(items as Partial<BaitConfig>);
+        return;
+      }
+
+      chrome.storage.sync.get(Object.keys(DEFAULT_CONFIG), (legacyItems) => {
+        finalize(legacyItems as Partial<BaitConfig>);
+      });
     });
   }, []);
 
@@ -27,7 +41,7 @@ export function useConfig() {
       if (partial.llm) {
         updated.llm = { ...prev.llm, ...partial.llm };
       }
-      chrome.storage.sync.set(updated as Record<string, unknown>);
+      chrome.storage.local.set(updated as Record<string, unknown>);
       return updated;
     });
   }, []);
@@ -39,7 +53,7 @@ export function useConfig() {
         llm.providers = { ...prev.llm.providers, ...partial.providers };
       }
       const updated = { ...prev, llm };
-      chrome.storage.sync.set(updated as Record<string, unknown>);
+      chrome.storage.local.set(updated as Record<string, unknown>);
       return updated;
     });
   }, []);

@@ -7,6 +7,7 @@ import {
   parseOpenAIResponse,
   parseChunkJson,
   mapToChunkResults,
+  createFallbackChunkResults,
 } from "../shared/llm-adapter.ts";
 import type { LLMConfig } from "../shared/types.ts";
 
@@ -233,7 +234,32 @@ describe("mapToChunkResults", () => {
     expect(results[0].isSimple).toBe(true);
     // index 1 没有对应 item，应该返回默认值
     expect(results[1].original).toBe("World");
-    expect(results[1].isSimple).toBe(true);
+    expect(results[1].isSimple).toBe(false);
+    expect(results[1].status).toBe("fallback");
+    expect(results[1].fallbackReason).toBe("invalid_response");
     expect(results[1].newWords).toEqual([]);
+  });
+});
+
+
+describe("fallback helpers", () => {
+  it("createFallbackChunkResults 返回显式 fallback 状态", () => {
+    const results = createFallbackChunkResults(["A sample sentence."], "api_error");
+    expect(results[0].status).toBe("fallback");
+    expect(results[0].fallbackReason).toBe("api_error");
+    expect(results[0].isSimple).toBe(false);
+  });
+
+  it("knownWords 会在映射阶段过滤 newWords", () => {
+    const items = parseChunkJson('[{"index":0,"original":"Word","chunked":"Word","is_simple":false,"new_words":[{"word":"Prestigious","definition":"权威的"},{"word":"arcane","definition":"晦涩的"}]}]');
+    const results = mapToChunkResults(["Word"], items, ["prestigious"]);
+    expect(results[0].newWords).toEqual([{ word: "arcane", definition: "晦涩的" }]);
+    expect(results[0].status).toBe("success");
+  });
+
+  it("缺失句子映射为 invalid_response fallback", () => {
+    const results = mapToChunkResults(["Hello"], []);
+    expect(results[0].status).toBe("fallback");
+    expect(results[0].fallbackReason).toBe("invalid_response");
   });
 });
