@@ -170,7 +170,10 @@ export function renderChunkedHtml(result: ChunkResult, intensity: number = 5): s
   }
 
   const containerStyle = isInline ? "" : ' style="display:block !important"';
-  return `<div class="${containerClass}"${containerStyle} data-original="${escapeHtml(result.original)}">${linesHtml}</div>`;
+  const fallbackTip = result.status === "fallback"
+    ? `<div class="enlearn-fallback-tip">分析失败，已显示原句（${escapeHtml(result.fallbackReason ?? "unknown")}）</div>`
+    : "";
+  return `<div class="${containerClass}"${containerStyle} data-original="${escapeHtml(result.original)}" data-status="${result.status ?? "success"}">${linesHtml}${fallbackTip}</div>`;
 }
 
 /**

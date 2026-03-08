@@ -5,7 +5,44 @@
  * 在 Service Worker 中运行，直接调用 LLM API。
  */
 
-import type { LLMConfig, ChunkResult, FullAnalysisResult } from "./types.ts";
+import type {
+  LLMConfig,
+  ChunkResult,
+  FullAnalysisResult,
+  ChunkFallbackReason,
+} from "./types.ts";
+
+
+
+function normalizeKnownWords(knownWords: string[]): string[] {
+  const normalized = knownWords
+    .map(word => word.trim().toLowerCase())
+    .filter(Boolean);
+  return [...new Set(normalized)];
+}
+
+function filterKnownWords(
+  newWords: { word: string; definition: string }[],
+  knownWords: string[]
+): { word: string; definition: string }[] {
+  if (newWords.length === 0 || knownWords.length === 0) return newWords;
+  const knownSet = new Set(normalizeKnownWords(knownWords));
+  return newWords.filter(item => !knownSet.has(item.word.trim().toLowerCase()));
+}
+
+export function createFallbackChunkResults(
+  sentences: string[],
+  reason: ChunkFallbackReason
+): ChunkResult[] {
+  return sentences.map((sentence) => ({
+    original: sentence,
+    chunked: sentence,
+    isSimple: false,
+    newWords: [],
+    status: "fallback",
+    fallbackReason: reason,
+  }));
+}
 
 // ========== Prompt 构建 ==========
 
@@ -221,7 +258,8 @@ export function parseChunkJson(text: string): LLMChunkItem[] {
  */
 export function mapToChunkResults(
   sentences: string[],
-  items: LLMChunkItem[]
+  items: LLMChunkItem[],
+  knownWords: string[] = []
 ): ChunkResult[] {
   return sentences.map((sentence, i) => {
     const match = items.find(item => item.index === i);
@@ -229,15 +267,18 @@ export function mapToChunkResults(
       return {
         original: sentence,
         chunked: sentence,
-        isSimple: true,
+        isSimple: false,
         newWords: [],
+        status: "fallback",
+        fallbackReason: "invalid_response",
       };
     }
     return {
       original: match.original || sentence,
       chunked: match.chunked,
       isSimple: match.is_simple,
-      newWords: match.new_words ?? [],
+      newWords: filterKnownWords(match.new_words ?? [], knownWords),
+      status: "success",
     };
   });
 }
@@ -250,7 +291,8 @@ export async function chunkSentences(
   config: LLMConfig,
   knownWords: string[] = []
 ): Promise<ChunkResult[]> {
-  const prompt = buildChunkPrompt(sentences, knownWords);
+  const normalizedKnownWords = normalizeKnownWords(knownWords);
+  const prompt = buildChunkPrompt(sentences, normalizedKnownWords);
 
   let responseData: unknown;
 
@@ -269,7 +311,7 @@ export async function chunkSentences(
 
     responseData = await response.json();
     const items = parseGeminiResponse(responseData);
-    return mapToChunkResults(sentences, items);
+    return mapToChunkResults(sentences, items, normalizedKnownWords);
   } else {
     const { url, body, headers } = buildOpenAIRequest(prompt, config);
     const response = await fetch(url, {
@@ -285,7 +327,7 @@ export async function chunkSentences(
 
     responseData = await response.json();
     const items = parseOpenAIResponse(responseData);
-    return mapToChunkResults(sentences, items);
+    return mapToChunkResults(sentences, items, normalizedKnownWords);
   }
 }
 

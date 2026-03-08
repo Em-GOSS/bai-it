@@ -8,15 +8,15 @@ Last updated: 2026-03-02
 
 ## Data Storage
 
-All data is stored locally on your device using Chrome's built-in storage APIs (chrome.storage and IndexedDB):
+All data is stored locally on your device using Chrome's built-in local storage APIs (chrome.storage.local and IndexedDB):
 
 - **API Key**: Your LLM API key is stored locally and is only used to make requests directly from your browser to the LLM provider you choose. It is never sent to us or any third party.
 - **Learning Data**: Your vocabulary records, chunking history, and learning progress are stored locally in IndexedDB. None of this data leaves your device.
-- **Preferences**: Your settings (display options, etc.) are stored locally via chrome.storage.
+- **Preferences**: Your settings (display options, site toggles, provider config) are stored locally via chrome.storage.local.
 
 ## Network Requests
 
-The only network requests this extension makes are from your browser directly to the LLM API provider (e.g., OpenAI, Anthropic) using the API key you provide. No data is sent to any server owned or operated by us.
+The only network requests this extension makes are from your browser directly to the LLM API provider (e.g., OpenAI, Gemini, DeepSeek) using the API key you provide, and only when you enable LLM analysis. No data is sent to any server owned or operated by us.
 
 ## Third Parties
 

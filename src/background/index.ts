@@ -9,18 +9,28 @@
  * 5. 管理配置和站点开关
  */
 
-import type { Message, BaitConfig, ChunkResult, PatternKey } from "../shared/types.ts";
+import type { Message, BaitConfig, ChunkResult, PatternKey, ChunkFallbackReason } from "../shared/types.ts";
 import { DEFAULT_CONFIG, resolveLLMConfig, migrateLLMConfig } from "../shared/types.ts";
 import { getCachedBatch, setCacheBatch } from "../shared/cache.ts";
-import { chunkSentences, analyzeSentenceFull } from "../shared/llm-adapter.ts";
+import { chunkSentences, analyzeSentenceFull, createFallbackChunkResults } from "../shared/llm-adapter.ts";
 import { openDB as openDataDB, pendingSentenceDAO, learningRecordDAO } from "../shared/db.ts";
 
 // ========== 配置管理 ==========
 
 async function getConfig(): Promise<BaitConfig> {
   const keys = Object.keys(DEFAULT_CONFIG);
-  const items = await chrome.storage.sync.get(keys);
-  const config = items as unknown as BaitConfig;
+  // 配置里包含 API key 等敏感字段，统一使用 local 存储，避免账号级同步。
+  const localItems = await chrome.storage.local.get(keys);
+
+  // 兼容历史版本（sync）并迁移到 local，减少升级后的配置丢失感。
+  const hasLocalConfig = Object.values(localItems).some(v => v !== undefined);
+  const sourceItems = hasLocalConfig ? localItems : await chrome.storage.sync.get(keys);
+
+  const config: BaitConfig = {
+    ...DEFAULT_CONFIG,
+    ...(sourceItems as unknown as Partial<BaitConfig>),
+    llm: migrateLLMConfig((sourceItems as unknown as Partial<BaitConfig>).llm),
+  };
 
   if (!Array.isArray(config.disabledSites)) {
     config.disabledSites = [];
@@ -28,8 +38,10 @@ async function getConfig(): Promise<BaitConfig> {
   if (!config.chunkGranularity) {
     config.chunkGranularity = "fine";
   }
-  // 兼容旧格式 + 新格式
-  config.llm = migrateLLMConfig(config.llm);
+
+  if (!hasLocalConfig) {
+    await chrome.storage.local.set(config as Record<string, unknown>);
+  }
 
   return config;
 }
@@ -40,7 +52,7 @@ async function updateConfig(partial: Partial<BaitConfig>): Promise<BaitConfig> {
   if (partial.llm) {
     updated.llm = { ...current.llm, ...partial.llm };
   }
-  await chrome.storage.sync.set(updated as Record<string, unknown>);
+  await chrome.storage.local.set(updated as Record<string, unknown>);
   return updated;
 }
 
@@ -72,7 +84,7 @@ async function toggleSite(hostname: string): Promise<{ enabled: boolean; disable
     enabled = false;
   }
 
-  await chrome.storage.sync.set({ disabledSites: config.disabledSites });
+  await chrome.storage.local.set({ disabledSites: config.disabledSites });
   return { enabled, disabledSites: config.disabledSites };
 }
 
@@ -107,6 +119,7 @@ let pendingBatch: {
   sentences: string[];
   source_url?: string;
   resolvers: Map<string, (result: ChunkResult) => void>;
+  knownWords: Set<string>;
   timer: ReturnType<typeof setTimeout> | null;
 } | null = null;
 
@@ -115,15 +128,20 @@ const MAX_BATCH_SIZE = 5;
 
 function addToBatch(
   sentence: string,
-  sourceUrl?: string
+  sourceUrl?: string,
+  knownWords: string[] = []
 ): Promise<ChunkResult> {
   return new Promise((resolve) => {
     if (!pendingBatch) {
-      pendingBatch = { sentences: [], source_url: sourceUrl, resolvers: new Map(), timer: null };
+      pendingBatch = { sentences: [], source_url: sourceUrl, resolvers: new Map(), knownWords: new Set(), timer: null };
     }
 
     pendingBatch.sentences.push(sentence);
     pendingBatch.resolvers.set(sentence, resolve);
+    for (const word of knownWords) {
+      const normalized = word.trim().toLowerCase();
+      if (normalized) pendingBatch.knownWords.add(normalized);
+    }
 
     if (pendingBatch.timer) clearTimeout(pendingBatch.timer);
 
@@ -150,7 +168,9 @@ async function flushBatch(): Promise<void> {
       throw new Error("API key 未配置");
     }
 
-    const results = await chunkSentences(batch.sentences, llmConfig);
+    const storedKnownWords = await getKnownWords();
+    const knownWords = [...new Set([...storedKnownWords, ...batch.knownWords])];
+    const results = await chunkSentences(batch.sentences, llmConfig, knownWords);
 
     // 写缓存
     const cachePairs = results.map((r, i) => ({
@@ -166,18 +186,48 @@ async function flushBatch(): Promise<void> {
     }
 
     updateDailyStats(results.filter(r => !r.isSimple).length);
-  } catch {
-    for (const [sentence, resolver] of batch.resolvers) {
-      resolver({
-        original: sentence,
-        chunked: sentence,
-        isSimple: true,
-        newWords: [],
-      });
+  } catch (error) {
+    const reason = mapChunkErrorToReason(error);
+    const fallbackResults = createFallbackChunkResults(batch.sentences, reason);
+    console.warn("[bai-it] chunk batch fallback:", reason, error instanceof Error ? error.message : "unknown error");
+
+    for (let i = 0; i < fallbackResults.length; i++) {
+      const resolver = batch.resolvers.get(batch.sentences[i]);
+      if (resolver) resolver(fallbackResults[i]);
     }
   }
 }
 
+
+function mapChunkErrorToReason(error: unknown): ChunkFallbackReason {
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  if (message.includes("api key") || message.includes("未配置") || message.includes("missing")) {
+    return "missing_api_key";
+  }
+  if (message.includes("timeout")) {
+    return "timeout";
+  }
+  if (message.includes("json") || message.includes("格式") || message.includes("invalid") || message.includes("空响应")) {
+    return "invalid_response";
+  }
+  if (message.includes("api") || message.includes("http") || message.includes("network") || message.includes("fetch")) {
+    return "api_error";
+  }
+  return "unknown";
+}
+
+async function getKnownWords(): Promise<string[]> {
+  try {
+    const stored = await chrome.storage.local.get({ knownWords: [] });
+    if (!Array.isArray(stored.knownWords)) return [];
+    return stored.knownWords
+      .filter((word): word is string => typeof word === "string")
+      .map(word => word.trim().toLowerCase())
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
 // ========== 统计 ==========
 
 async function updateDailyStats(chunkedCount: number): Promise<void> {
@@ -296,7 +346,7 @@ async function handleMessage(
 
       // 3. 未命中的加入批量队列
       const apiResults = await Promise.all(
-        uncached.map(s => addToBatch(s, source_url))
+        uncached.map(s => addToBatch(s, source_url, message.knownWords ?? []))
       );
 
       // 4. 合并

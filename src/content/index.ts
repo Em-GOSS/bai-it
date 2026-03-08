@@ -142,6 +142,14 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+
+
+function getKnownWordsList(): string[] {
+  return [...knownWords]
+    .map(word => word.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 function onTriggerParentHover(e: MouseEvent): void {
   const el = e.target as Element;
   const wrap = el.closest?.(".enlearn-trigger-wrap, [data-enlearn-trigger]");
@@ -179,7 +187,11 @@ async function init(): Promise<void> {
   try {
     const stored = await chrome.storage.local.get({ knownWords: [] });
     if (Array.isArray(stored.knownWords)) {
-      for (const w of stored.knownWords) knownWords.add(w as string);
+      for (const w of stored.knownWords) {
+        if (typeof w !== "string") continue;
+        const normalized = w.trim().toLowerCase();
+        if (normalized) knownWords.add(normalized);
+      }
     }
   } catch {
     // 静默失败
@@ -336,6 +348,16 @@ function onStorageChanged(changes: { [key: string]: chrome.storage.StorageChange
     config.scanThreshold = changes.scanThreshold.newValue as typeof config.scanThreshold;
     needReprocess = true;
   }
+  if (changes.knownWords) {
+    knownWords.clear();
+    const updated = Array.isArray(changes.knownWords.newValue) ? changes.knownWords.newValue : [];
+    for (const word of updated) {
+      if (typeof word !== "string") continue;
+      const normalized = word.trim().toLowerCase();
+      if (normalized) knownWords.add(normalized);
+    }
+    needReprocess = true;
+  }
 
   // 配置变更后用新配置重新处理页面
   if (needReprocess && isActive && !isPaused) {
@@ -396,6 +418,7 @@ function copyFontStyles(source: Element, target: HTMLElement): void {
   target.style.color = computed.color;
   target.style.letterSpacing = computed.letterSpacing;
   target.style.wordSpacing = computed.wordSpacing;
+  target.style.fontWeight = computed.fontWeight;
 }
 
 /**
@@ -711,6 +734,10 @@ function processElementWithLinks(el: Element, text: string): void {
   clone.classList.add("enlearn-chunked");
   clone.setAttribute("data-original", text);
   clone.style.setProperty("display", "block", "important");
+  // clone 继承的原始 class 可能携带绝对定位/transform，强制回到普通文档流避免重叠渲染。
+  clone.style.setProperty("position", "static", "important");
+  clone.style.setProperty("inset", "auto", "important");
+  clone.style.setProperty("transform", "none", "important");
 
   // 8. 复制字体样式 + 插入
   copyFontStyles(el, clone);
@@ -1009,6 +1036,7 @@ function addManualTrigger(el: Element, text: string): void {
           type: "chunk",
           sentences: [text],
           source_url: window.location.href,
+          knownWords: getKnownWordsList(),
         }) as { results: ChunkResult[] } | null;
 
         if (response?.results?.[0] && !response.results[0].isSimple) {
@@ -1109,6 +1137,7 @@ async function flushProcessQueue(): Promise<void> {
         type: "chunk",
         sentences,
         source_url: window.location.href,
+        knownWords: getKnownWordsList(),
       }),
       timeoutPromise,
     ]);

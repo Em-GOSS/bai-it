@@ -76,8 +76,8 @@ Supported LLM providers:
 
 - **No backend**: No server. Your data is never uploaded anywhere
 - **No login**: No account needed
-- **Local storage**: All learning data stays in your browser's IndexedDB
-- **API keys stay local**: Your keys are stored only in your browser. The extension calls LLM APIs directly from your browser — no intermediary server
+- **Local storage**: Learning data stays in IndexedDB; extension config (including API keys) is stored in chrome.storage.local
+- **API keys stay local**: Keys stay on your current browser device, and requests are sent directly to your selected LLM provider only after you explicitly enable/configure LLM analysis
 
 Full privacy policy: [PRIVACY.md](./PRIVACY.md)
 

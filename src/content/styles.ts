@@ -14,6 +14,10 @@ export const ENLEARN_STYLES = `
   background: transparent;
   border-radius: 0;
   transition: background 0.2s;
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  text-indent: 0 !important;
 }
 
 .enlearn-chunked:hover {
@@ -56,6 +60,15 @@ export const ENLEARN_STYLES = `
 /* L1：从句变淡 */
 .enlearn-dim {
   opacity: 0.5;
+}
+
+
+
+.enlearn-fallback-tip {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(220, 38, 38, 0.78);
 }
 
 /* 生词轻标记 */
@@ -248,6 +261,10 @@ body.enlearn-paused .enlearn-original-hidden { display: block !important; }
 
   .enlearn-separator {
     color: rgba(96, 165, 250, 0.35);
+  }
+
+  .enlearn-fallback-tip {
+    color: rgba(252, 165, 165, 0.9);
   }
 
   .enlearn-loading::after {

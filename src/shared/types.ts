@@ -96,7 +96,7 @@ export function migrateLLMConfig(raw: unknown): LLMMultiConfig {
 // ========== Content Script ↔ Service Worker 消息 ==========
 
 export type Message =
-  | { type: "chunk"; sentences: string[]; source_url?: string }
+  | { type: "chunk"; sentences: string[]; source_url?: string; knownWords?: string[] }
   | { type: "hasApiKey" }
   | { type: "getConfig" }
   | { type: "updateConfig"; config: Partial<BaitConfig> }
@@ -118,11 +118,19 @@ export type BackgroundMessage =
 
 // ========== 分块结果 ==========
 
+export type ChunkStatus = "success" | "fallback" | "error";
+export type ChunkFallbackReason = "api_error" | "missing_api_key" | "timeout" | "invalid_response" | "unknown";
+
 export interface ChunkResult {
   original: string;
   chunked: string;
   isSimple: boolean;
   newWords: { word: string; definition: string }[];
+  /**
+   * 显式区分正常分析与降级结果，避免把失败误判为“简单句”。
+   */
+  status?: ChunkStatus;
+  fallbackReason?: ChunkFallbackReason;
   sentenceAnalysis?: string;
   expressionTips?: string;
 }
